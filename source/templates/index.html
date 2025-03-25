@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Task Manager</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <style>
+    body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    margin: 0;
+    padding: 20px;
+  }
+  
+  .container {
+    max-width: 600px;
+    margin: auto;
+    background: white;
+    padding: 20px;
+    border-radius: 5px;
+  }
+  
+  h1, h2 {
+    text-align: center;
+    color: #333;
+  }
+  
+  form {
+    margin-bottom: 20px;
+  }
+  
+  input, textarea {
+    width: 100%;
+    padding: 10px;
+    margin: 5px 0;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+  }
+  
+  button {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    background: #333;
+    color: white;
+    border: none;
+    margin-top: 10px;
+    cursor: pointer;
+  }
+  
+  button:hover {
+    background: #555;
+  }
+  
+  ul {
+    list-style: none;
+    padding: 0;
+  }
+  
+  li {
+    background: #e4e4e4;
+    margin: 5px 0;
+    padding: 10px;
+    border-radius: 3px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Task Manager</h1>
+    <form id="taskForm">
+      <input type="text" id="title" name="title" placeholder="Task Title" required>
+      <textarea id="description" name="description" placeholder="Task Description" required></textarea>
+      <button type="submit">Add Task</button>
+    </form>
+    <h2>All Tasks</h2>
+    <ul id="taskList">
+      <!-- Tasks will be dynamically inserted here -->
+    </ul>
+    <button id="undoBtn">Undo Delete</button>
+  </div>
+
+  <script>
+    // Minimal JavaScript to interact with the API endpoints
+    const form = document.getElementById('taskForm');
+    const taskList = document.getElementById('taskList');
+    const undoBtn = document.getElementById('undoBtn');
+
+    // Function to fetch tasks from the backend
+    async function fetchTasks() {
+      const response = await fetch('/tasks/');
+      const tasks = await response.json();
+      taskList.innerHTML = '';
+      tasks.forEach(task => {
+        const li = document.createElement('li');
+        li.textContent = `${task.task_id}: ${task.title} - ${task.description}`;
+        const deleteBtn = document.createElement('button');
+        deleteBtn.textContent = 'Delete';
+        deleteBtn.onclick = async () => {
+          await fetch(`/tasks/${task.task_id}`, { method: 'DELETE' });
+          fetchTasks();
+        };
+        li.appendChild(deleteBtn);
+        taskList.appendChild(li);
+      });
+    }
+
+    // Form submission handler for adding a new task
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const title = document.getElementById('title').value;
+      const description = document.getElementById('description').value;
+      await fetch('/tasks/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, description })
+      });
+      form.reset();
+      fetchTasks();
+    });
+
+    // Handler for undo deletion
+    undoBtn.addEventListener('click', async () => {
+      await fetch('/tasks/undo', { method: 'POST' });
+      fetchTasks();
+    });
+
+    // Initial load of tasks
+    fetchTasks();
+  </script>
+</body>
+</html>
